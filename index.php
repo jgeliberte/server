@@ -12,14 +12,16 @@ $session = mt_rand(1,999);
 	* {margin:0;padding:0;box-sizing:border-box;font-family:arial,sans-serif;resize:none;}
 	html,body {width:100%;height:100%;}
 	#wrapper {position:relative;margin:auto;max-width:1000px;height:100%;}
-	#chat_output {position:absolute;top:0;left:0;padding:20px;width:100%;height:calc(100% - 100px);}
+	#chat_output {position:absolute;top:0;left:0;padding:20px;width:100%;height:calc(100% - 100px);z-index: -1;}
 	#chat_input {position:absolute;bottom:0;left:0;padding:10px;width:100%;height:100px;border:1px solid #ccc;}
+	#send {z-index: 1000000;}
 	</style>
 </head>
 <body>
 	<div id="wrapper">
 		<div id="chat_output"></div>
 		<textarea id="chat_input" placeholder="No one will know you're here."></textarea>
+		<input type="button" id="send" value="SEND" />
 		<script type="text/javascript">
 		jQuery(function($){
 			// Websocket
@@ -45,10 +47,8 @@ $session = mt_rand(1,999);
 				}
 			}
 			// Events
-			$('#chat_input').on('keyup',function(e){
-				if(e.keyCode==13)
-				{
-					var chat_msg = $(this).val();
+			$('#send').click(function(){
+					var chat_msg = $('#chat_input').val();
 					websocket_server.send(
 						JSON.stringify({
 							'type':'chat',
@@ -56,9 +56,8 @@ $session = mt_rand(1,999);
 							'chat_msg':chat_msg
 						})
 					);
-					$(this).val('');
-				}
-			});
+					$('#chat_input').val('');
+			})
 		});
 		</script>
 	</div>
