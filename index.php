@@ -23,7 +23,7 @@
 		<script type="text/javascript">
 		jQuery(function($){
 			// Websocket
-			var websocket_server = new WebSocket("ws://localhost:8080/");
+			var websocket_server = new WebSocket("ws://"+window.location.hostname+":8080/");
 			websocket_server.onopen = function(e) {
 				websocket_server.send(
 					JSON.stringify({
