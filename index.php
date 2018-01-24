@@ -55,6 +55,7 @@
 						})
 					);
 					$('#chat_input').val('');
+					$('#chat_input').focus();
 			})
 		});
 		</script>
