@@ -1,6 +1,6 @@
-<!-- <?php
+<?php
 $session = mt_rand(1,999);
-?> -->
+?>
 <!DOCTYPE html>
 <html>
 <head>
@@ -25,12 +25,12 @@ $session = mt_rand(1,999);
 		<script type="text/javascript">
 		jQuery(function($){
 			// Websocket
-			var websocket_server = new WebSocket("ws://localhost:8080/");
+			var websocket_server = new WebSocket("ws://"+window.location.hostname+":8080/");
 			websocket_server.onopen = function(e) {
 				websocket_server.send(
 					JSON.stringify({
 						'type':'socket',
-						'user_id': 'hey'
+						'user_id': <?php echo $session ?>
 					})
 				);
 			};
@@ -52,7 +52,7 @@ $session = mt_rand(1,999);
 					websocket_server.send(
 						JSON.stringify({
 							'type':'chat',
-							'user_id': 'hey',
+							'user_id': <?php echo $session ?>,
 							'chat_msg':chat_msg
 						})
 					);
