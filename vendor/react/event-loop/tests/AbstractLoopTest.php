@@ -9,106 +9,75 @@ abstract class AbstractLoopTest extends TestCase
      */
     protected $loop;
 
-    private $tickTimeout;
-
     public function setUp()
     {
-        // HHVM is a bit slow, so give it more time
-        $this->tickTimeout = defined('HHVM_VERSION') ? 0.02 : 0.005;
         $this->loop = $this->createLoop();
     }
 
     abstract public function createLoop();
 
-    public function createSocketPair()
+    public function createStream()
     {
-        $domain = (DIRECTORY_SEPARATOR === '\\') ? STREAM_PF_INET : STREAM_PF_UNIX;
-        $sockets = stream_socket_pair($domain, STREAM_SOCK_STREAM, STREAM_IPPROTO_IP);
-    
-        foreach ($sockets as $socket) {
-            if (function_exists('stream_set_read_buffer')) {
-                stream_set_read_buffer($socket, 0);
-            }
-        }
-    
-        return $sockets;
+        return fopen('php://temp', 'r+');
+    }
+
+    public function writeToStream($stream, $content)
+    {
+        fwrite($stream, $content);
+        rewind($stream);
     }
 
     public function testAddReadStream()
     {
-        list ($input, $output) = $this->createSocketPair();
+        $input = $this->createStream();
 
         $this->loop->addReadStream($input, $this->expectCallableExactly(2));
 
-        fwrite($output, "foo\n");
+        $this->writeToStream($input, "foo\n");
         $this->loop->tick();
 
-        fwrite($output, "bar\n");
-        $this->loop->tick();
-    }
-
-    public function testAddReadStreamIgnoresSecondCallable()
-    {
-        list ($input, $output) = $this->createSocketPair();
-
-        $this->loop->addReadStream($input, $this->expectCallableExactly(2));
-        $this->loop->addReadStream($input, $this->expectCallableNever());
-
-        fwrite($output, "foo\n");
-        $this->loop->tick();
-
-        fwrite($output, "bar\n");
+        $this->writeToStream($input, "bar\n");
         $this->loop->tick();
     }
 
     public function testAddWriteStream()
     {
-        list ($input) = $this->createSocketPair();
+        $input = $this->createStream();
 
         $this->loop->addWriteStream($input, $this->expectCallableExactly(2));
-        $this->loop->tick();
-        $this->loop->tick();
-    }
-
-    public function testAddWriteStreamIgnoresSecondCallable()
-    {
-        list ($input) = $this->createSocketPair();
-
-        $this->loop->addWriteStream($input, $this->expectCallableExactly(2));
-        $this->loop->addWriteStream($input, $this->expectCallableNever());
         $this->loop->tick();
         $this->loop->tick();
     }
 
     public function testRemoveReadStreamInstantly()
     {
-        list ($input, $output) = $this->createSocketPair();
+        $input = $this->createStream();
 
         $this->loop->addReadStream($input, $this->expectCallableNever());
         $this->loop->removeReadStream($input);
 
-        fwrite($output, "bar\n");
+        $this->writeToStream($input, "bar\n");
         $this->loop->tick();
     }
 
     public function testRemoveReadStreamAfterReading()
     {
-        list ($input, $output) = $this->createSocketPair();
+        $input = $this->createStream();
 
         $this->loop->addReadStream($input, $this->expectCallableOnce());
 
-        fwrite($output, "foo\n");
+        $this->writeToStream($input, "foo\n");
         $this->loop->tick();
 
         $this->loop->removeReadStream($input);
 
-        fwrite($output, "bar\n");
+        $this->writeToStream($input, "bar\n");
         $this->loop->tick();
     }
 
     public function testRemoveWriteStreamInstantly()
     {
-        list ($input) = $this->createSocketPair();
+        $input = $this->createStream();
 
         $this->loop->addWriteStream($input, $this->expectCallableNever());
         $this->loop->removeWriteStream($input);
@@ -117,7 +86,7 @@ abstract class AbstractLoopTest extends TestCase
 
     public function testRemoveWriteStreamAfterWriting()
     {
-        list ($input) = $this->createSocketPair();
+        $input = $this->createStream();
 
         $this->loop->addWriteStream($input, $this->expectCallableOnce());
         $this->loop->tick();
@@ -128,60 +97,60 @@ abstract class AbstractLoopTest extends TestCase
 
     public function testRemoveStreamInstantly()
     {
-        list ($input, $output) = $this->createSocketPair();
-        
+        $input = $this->createStream();
+
         $this->loop->addReadStream($input, $this->expectCallableNever());
         $this->loop->addWriteStream($input, $this->expectCallableNever());
         $this->loop->removeStream($input);
-        
-        fwrite($output, "bar\n");
+
+        $this->writeToStream($input, "bar\n");
         $this->loop->tick();
     }
 
     public function testRemoveStreamForReadOnly()
     {
-        list ($input, $output) = $this->createSocketPair();
+        $input = $this->createStream();
 
         $this->loop->addReadStream($input, $this->expectCallableNever());
-        $this->loop->addWriteStream($output, $this->expectCallableOnce());
+        $this->loop->addWriteStream($input, $this->expectCallableOnce());
         $this->loop->removeReadStream($input);
 
-        fwrite($output, "foo\n");
+        $this->writeToStream($input, "foo\n");
         $this->loop->tick();
     }
 
     public function testRemoveStreamForWriteOnly()
     {
-        list ($input, $output) = $this->createSocketPair();
+        $input = $this->createStream();
 
-        fwrite($output, "foo\n");
+        $this->writeToStream($input, "foo\n");
 
         $this->loop->addReadStream($input, $this->expectCallableOnce());
-        $this->loop->addWriteStream($output, $this->expectCallableNever());
-        $this->loop->removeWriteStream($output);
+        $this->loop->addWriteStream($input, $this->expectCallableNever());
+        $this->loop->removeWriteStream($input);
 
         $this->loop->tick();
     }
 
     public function testRemoveStream()
     {
-        list ($input, $output) = $this->createSocketPair();
+        $input = $this->createStream();
 
         $this->loop->addReadStream($input, $this->expectCallableOnce());
         $this->loop->addWriteStream($input, $this->expectCallableOnce());
 
-        fwrite($output, "bar\n");
+        $this->writeToStream($input, "bar\n");
         $this->loop->tick();
 
         $this->loop->removeStream($input);
 
-        fwrite($output, "bar\n");
+        $this->writeToStream($input, "bar\n");
         $this->loop->tick();
     }
 
     public function testRemoveInvalid()
     {
-        list ($stream) = $this->createSocketPair();
+        $stream = $this->createStream();
 
         // remove a valid stream from the event loop that was never added in the first place
         $this->loop->removeReadStream($stream);
@@ -192,40 +161,40 @@ abstract class AbstractLoopTest extends TestCase
     /** @test */
     public function emptyRunShouldSimplyReturn()
     {
-        $this->assertRunFasterThan($this->tickTimeout);
+        $this->assertRunFasterThan(0.005);
     }
 
     /** @test */
     public function runShouldReturnWhenNoMoreFds()
     {
-        list ($input, $output) = $this->createSocketPair();
+        $input = $this->createStream();
 
         $loop = $this->loop;
         $this->loop->addReadStream($input, function ($stream) use ($loop) {
             $loop->removeStream($stream);
         });
 
-        fwrite($output, "foo\n");
+        $this->writeToStream($input, "foo\n");
 
-        $this->assertRunFasterThan($this->tickTimeout * 2);
+        $this->assertRunFasterThan(0.015);
     }
 
     /** @test */
     public function stopShouldStopRunningLoop()
     {
-        list ($input, $output) = $this->createSocketPair();
+        $input = $this->createStream();
 
         $loop = $this->loop;
         $this->loop->addReadStream($input, function ($stream) use ($loop) {
             $loop->stop();
         });
 
-        fwrite($output, "foo\n");
+        $this->writeToStream($input, "foo\n");
 
-        $this->assertRunFasterThan($this->tickTimeout * 2);
+        $this->assertRunFasterThan(0.005);
     }
 
-    public function testStopShouldPreventRunFromBlocking()
+    public function testStopShouldPreventRunFromBlocking($timeLimit = 0.005)
     {
         $this->loop->addTimer(
             1,
@@ -240,39 +209,29 @@ abstract class AbstractLoopTest extends TestCase
             }
         );
 
-        $this->assertRunFasterThan($this->tickTimeout * 2);
+        $this->assertRunFasterThan($timeLimit);
     }
 
     public function testIgnoreRemovedCallback()
     {
         // two independent streams, both should be readable right away
-        list ($input1, $output1) = $this->createSocketPair();
-        list ($input2, $output2) = $this->createSocketPair();
-        
-        $called = false;
+        $stream1 = $this->createStream();
+        $stream2 = $this->createStream();
 
         $loop = $this->loop;
-        $loop->addReadStream($input1, function ($stream) use (& $called, $loop, $input2) {
+        $loop->addReadStream($stream1, function ($stream) use ($loop, $stream2) {
             // stream1 is readable, remove stream2 as well => this will invalidate its callback
             $loop->removeReadStream($stream);
-            $loop->removeReadStream($input2);
-            
-            $called = true;
+            $loop->removeReadStream($stream2);
         });
 
         // this callback would have to be called as well, but the first stream already removed us
-        $loop->addReadStream($input2, function () use (& $called) {
-            if ($called) {
-                $this->fail('Callback 2 must not be called after callback 1 was called');
-            }
-        });
-            
-        fwrite($output1, "foo\n");
-        fwrite($output2, "foo\n");
-    
+        $loop->addReadStream($stream2, $this->expectCallableNever());
+
+        $this->writeToStream($stream1, "foo\n");
+        $this->writeToStream($stream2, "foo\n");
+
         $loop->run();
-    
-        $this->assertTrue($called);
     }
 
     public function testNextTick()
@@ -295,7 +254,7 @@ abstract class AbstractLoopTest extends TestCase
 
     public function testNextTickFiresBeforeIO()
     {
-        list ($stream) = $this->createSocketPair();
+        $stream = $this->createStream();
 
         $this->loop->addWriteStream(
             $stream,
@@ -317,7 +276,7 @@ abstract class AbstractLoopTest extends TestCase
 
     public function testRecursiveNextTick()
     {
-        list ($stream) = $this->createSocketPair();
+        $stream = $this->createStream();
 
         $this->loop->addWriteStream(
             $stream,
@@ -343,7 +302,7 @@ abstract class AbstractLoopTest extends TestCase
 
     public function testRunWaitsForNextTickEvents()
     {
-        list ($stream) = $this->createSocketPair();
+        $stream = $this->createStream();
 
         $this->loop->addWriteStream(
             $stream,
@@ -364,7 +323,7 @@ abstract class AbstractLoopTest extends TestCase
 
     public function testNextTickEventGeneratedByFutureTick()
     {
-        list ($stream) = $this->createSocketPair();
+        $stream = $this->createStream();
 
         $this->loop->futureTick(
             function () {
@@ -419,7 +378,7 @@ abstract class AbstractLoopTest extends TestCase
 
     public function testFutureTickFiresBeforeIO()
     {
-        list ($stream) = $this->createSocketPair();
+        $stream = $this->createStream();
 
         $this->loop->addWriteStream(
             $stream,
@@ -441,7 +400,7 @@ abstract class AbstractLoopTest extends TestCase
 
     public function testRecursiveFutureTick()
     {
-        list ($stream) = $this->createSocketPair();
+        $stream = $this->createStream();
 
         $this->loop->addWriteStream(
             $stream,
@@ -469,7 +428,7 @@ abstract class AbstractLoopTest extends TestCase
 
     public function testRunWaitsForFutureTickEvents()
     {
-        list ($stream) = $this->createSocketPair();
+        $stream = $this->createStream();
 
         $this->loop->addWriteStream(
             $stream,
@@ -490,7 +449,7 @@ abstract class AbstractLoopTest extends TestCase
 
     public function testFutureTickEventGeneratedByNextTick()
     {
-        list ($stream) = $this->createSocketPair();
+        $stream = $this->createStream();
 
         $this->loop->nextTick(
             function () {

@@ -1,6 +1,4 @@
-<?php
-$session = mt_rand(1,999);
-?>
+<?php $session = mt_rand(1,999); ?>
 <!DOCTYPE html>
 <html>
 <head>
@@ -20,17 +18,17 @@ $session = mt_rand(1,999);
 <body>
 	<div id="wrapper">
 		<div id="chat_output"></div>
-		<textarea id="chat_input" placeholder="No one will know you're here."></textarea>
+		<textarea id="chat_input" placeholder="No one will know that you're here.."></textarea>
 		<input type="button" id="send" value="SEND" />
 		<script type="text/javascript">
 		jQuery(function($){
 			// Websocket
-			var websocket_server = new WebSocket("ws://"+window.location.hostname+":8080/");
+			var websocket_server = new WebSocket("ws://localhost:8080/");
 			websocket_server.onopen = function(e) {
 				websocket_server.send(
 					JSON.stringify({
 						'type':'socket',
-						'user_id': <?php echo $session ?>
+						'user_id':<?php echo $session ?>
 					})
 				);
 			};

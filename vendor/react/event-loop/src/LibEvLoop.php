@@ -38,10 +38,6 @@ class LibEvLoop implements LoopInterface
      */
     public function addReadStream($stream, callable $listener)
     {
-        if (isset($this->readEvents[(int) $stream])) {
-            return;
-        }
-
         $callback = function () use ($stream, $listener) {
             call_user_func($listener, $stream, $this);
         };
@@ -57,10 +53,6 @@ class LibEvLoop implements LoopInterface
      */
     public function addWriteStream($stream, callable $listener)
     {
-        if (isset($this->writeEvents[(int) $stream])) {
-            return;
-        }
-
         $callback = function () use ($stream, $listener) {
             call_user_func($listener, $stream, $this);
         };

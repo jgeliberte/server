@@ -5,12 +5,14 @@ set -o pipefail
 if [[ "$TRAVIS_PHP_VERSION" != "hhvm" &&
       "$TRAVIS_PHP_VERSION" != "hhvm-nightly" ]]; then
 
+    # install "libevent" (used by 'event' and 'libevent' PHP extensions)
+    sudo apt-get install -y libevent-dev
+
     # install 'event' PHP extension
     echo "yes" | pecl install event
 
     # install 'libevent' PHP extension (does not support php 7)
-    if [[ "$TRAVIS_PHP_VERSION" != "7.0" &&
-          "$TRAVIS_PHP_VERSION" != "7.1" ]]; then
+    if [[ "$TRAVIS_PHP_VERSION" != "7.0" ]]; then
         curl http://pecl.php.net/get/libevent-0.1.0.tgz | tar -xz
         pushd libevent-0.1.0
         phpize
@@ -22,8 +24,7 @@ if [[ "$TRAVIS_PHP_VERSION" != "hhvm" &&
     fi
 
     # install 'libev' PHP extension (does not support php 7)
-    if [[ "$TRAVIS_PHP_VERSION" != "7.0" &&
-          "$TRAVIS_PHP_VERSION" != "7.1" ]]; then
+    if [[ "$TRAVIS_PHP_VERSION" != "7.0" ]]; then
         git clone --recursive https://github.com/m4rw3r/php-libev
         pushd php-libev
         phpize
@@ -35,3 +36,5 @@ if [[ "$TRAVIS_PHP_VERSION" != "hhvm" &&
     fi
 
 fi
+
+composer install --dev --prefer-source

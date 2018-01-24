@@ -13,39 +13,11 @@ namespace Evenement\Tests;
 
 class Listener
 {
-    private $data = [];
-
-    private $magicData = [];
-
-    private static $staticData = [];
-
-    public function onFoo($data)
+    public function onFoo()
     {
-        $this->data[] = $data;
     }
 
-    public function __invoke($data)
+    public static function onBar()
     {
-        $this->magicData[] = $data;
-    }
-
-    public static function onBar($data)
-    {
-        self::$staticData[] = $data;
-    }
-
-    public function getData()
-    {
-        return $this->data;
-    }
-
-    public function getMagicData()
-    {
-        return $this->magicData;
-    }
-
-    public static function getStaticData()
-    {
-        return self::$staticData;
     }
 }
