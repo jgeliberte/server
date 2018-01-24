@@ -1,6 +1,6 @@
-<?php
+<!-- <?php
 $session = mt_rand(1,999);
-?>
+?> -->
 <!DOCTYPE html>
 <html>
 <head>
@@ -28,7 +28,7 @@ $session = mt_rand(1,999);
 				websocket_server.send(
 					JSON.stringify({
 						'type':'socket',
-						'user_id':<?php echo $session ?>
+						'user_id': 'hey'
 					})
 				);
 			};
@@ -52,7 +52,7 @@ $session = mt_rand(1,999);
 					websocket_server.send(
 						JSON.stringify({
 							'type':'chat',
-							'user_id':<?php echo $session ?>,
+							'user_id': 'hey',
 							'chat_msg':chat_msg
 						})
 					);
