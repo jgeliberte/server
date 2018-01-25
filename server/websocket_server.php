@@ -18,6 +18,7 @@ class Chat implements MessageComponentInterface {
 
 	public function onOpen(ConnectionInterface $conn) {
 		$this->clients->attach($conn);
+		var_dump($conn);
 		// $this->users[$conn->resourceId] = $conn;
 	}
 
